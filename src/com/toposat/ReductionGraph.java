@@ -12,7 +12,7 @@ import org.jgrapht.graph.*;
 
 public class ReductionGraph {
     // parsing from .graphml to Graph
-    static void getGraph(Element root, LinkedHashMap<String, NVertex> nodes, Graph<NVertex, NEdge> graph) {
+    public static void getGraph(Element root, LinkedHashMap<String, NVertex> nodes, Graph<NVertex, NEdge> graph) {
         NodeList cList = root.getChildNodes();
         int cnt = 1;
         int id = 1;
@@ -43,7 +43,7 @@ public class ReductionGraph {
     }
 
     // recursive writer of formula from a tree(for CNF) in dimacs
-    static int treeWalkCNFdimacs(NodeFormula root, FileWriter Writer) throws IOException {
+    public static int treeWalkCNFdimacs(NodeFormula root, FileWriter Writer) throws IOException {
         int was_zero = 0;
         if (root == null) {
             return 1;
@@ -69,7 +69,7 @@ public class ReductionGraph {
 
     // writing .cnf file in dimacs
 
-    static void writeDimacsCNF(NodeFormula root, String filename) {
+    public static void writeDimacsCNF(NodeFormula root, String filename) {
         numberVariables nv = new numberVariables();
         nv.declareVariablesCNF(root);
         try {
@@ -87,7 +87,7 @@ public class ReductionGraph {
 
     // adds clauses to formula tree
 
-    static void traverseGraphNodes(Visitor myVisitor) {
+    public static void traverseGraphNodes(Visitor myVisitor) {
         Set<NVertex> vertices = m_graph.vertexSet();
         for (NVertex vertex : vertices) {
             NodeFormula placeCurrent = TseytinTransformation.findPlace(m_root);
@@ -95,7 +95,7 @@ public class ReductionGraph {
         }
     }
 
-    static void traverseGraphEdges(Visitor myvisitor) {
+    public static void traverseGraphEdges(Visitor myvisitor) {
         Set<NEdge> edges = m_graph.edgeSet();
         for (NEdge edge : edges) {
             NodeFormula placeCurrent = TseytinTransformation.findPlace(m_root);
@@ -103,7 +103,7 @@ public class ReductionGraph {
         }
     }
 
-    static void traverseGraphNonEdges(Visitor myVisitor) {
+    public static void traverseGraphNonEdges(Visitor myVisitor) {
         Set<NVertex> vertices = m_graph.vertexSet();
         for (NVertex first : vertices) {
             for (NVertex second : vertices) {
@@ -117,13 +117,13 @@ public class ReductionGraph {
         }
     }
 
-    static void traverseGraph(Visitor myVisitor) {
+    public static void traverseGraph(Visitor myVisitor) {
         NodeFormula placeCurrent = TseytinTransformation.findPlace(m_root);
         myVisitor.visitGraph(placeCurrent, m_graph);
     }
 
     // reads result file with SAT solver ansver and gets true variables
-    static Vector<Integer> getAnsDimacs(String filename) {
+    public static Vector<Integer> getAnsDimacs(String filename) {
         Vector<Integer> true_var = new Vector<>();
         try {
             File res = new File(filename);
@@ -153,7 +153,7 @@ public class ReductionGraph {
         return true_var;
     }
 
-    static Vector<String> getAnsSMT(String filename) {
+    public static Vector<String> getAnsSMT(String filename) {
         Vector<String> true_var = new Vector<>();
         try {
             File res = new File(filename);
@@ -193,7 +193,7 @@ public class ReductionGraph {
         return document.getDocumentElement();
     }
 
-    static void solveSMTZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
+    public static void solveSMTZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
         File result = new File(resultFile);
         result.createNewFile();
         ProcessBuilder b = new ProcessBuilder(path, "-smt2", questionFile);
@@ -202,7 +202,7 @@ public class ReductionGraph {
         p.waitFor();
     }
 
-    static void solveCNFPainless(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
+    public static void solveCNFPainless(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
         File result = new File(resultFile);
         result.createNewFile();
         ProcessBuilder b = new ProcessBuilder(path, questionFile);
@@ -247,9 +247,6 @@ public class ReductionGraph {
         if (args.length == 0) {
             System.out.println(m_strUsage);
             return;
-        }
-        for (int i = 0; i < args.length; ++i) {
-            System.out.println(args[i]);
         }
         for (int i = 0; i < args.length; ++i) {
             if (args[i].equals("-e")) {

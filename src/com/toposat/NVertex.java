@@ -10,9 +10,9 @@ public class NVertex {
         this.id = id;
         this.name = name;
     }
-    String getLabel(){ return label; }
-    int getId(){ return id; }
-    String getName(){ return name; }
+    public String getLabel(){ return label; }
+    public int getId(){ return id; }
+    public String getName(){ return name; }
     public String toString(){ return "NVertex" + id + label; }
     @Override
     public int hashCode() {
