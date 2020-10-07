@@ -1,4 +1,4 @@
-package com.company;
+package com.toposat;
 
 public class NVertex {
     private final String label; // label - String id

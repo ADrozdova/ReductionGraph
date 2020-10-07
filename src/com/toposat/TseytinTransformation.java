@@ -1,4 +1,4 @@
-package com.company;
+package com.toposat;
 
 import java.io.*;
 import java.util.HashSet;
@@ -43,7 +43,7 @@ public class TseytinTransformation {
     }
 
     // creates formula tree from a split text formula
-    public static int makeTree(String[] formula, int start, int stop, NodeFormula root){
+    public static int makeTree(String[] formula, int start, int stop, com.toposat.NodeFormula root){
         int pos = start;
         if(stop - start <= 0){
             return 1;
@@ -60,7 +60,7 @@ public class TseytinTransformation {
         }
         if(getOpType(formula[start]) == TypeOperation.not){
             root.operation =  getOpType(formula[pos]);
-            root.left = new NodeFormula();
+            root.left = new com.toposat.NodeFormula();
             root.right = null;
             makeTree(formula, start + 1, stop, root.left);
             return 0;
@@ -78,8 +78,8 @@ public class TseytinTransformation {
             if(isOperation(op)){
                 if(openCnt == closeCnt){
                     root.operation = op;
-                    root.left = new NodeFormula();
-                    root.right = new NodeFormula();
+                    root.left = new com.toposat.NodeFormula();
+                    root.right = new com.toposat.NodeFormula();
                     int a = makeTree(formula, start, pos, root.left);
                     if(a != 0){
                         root.left = null;
@@ -111,7 +111,7 @@ public class TseytinTransformation {
 
     // creates additional variables, which are needed for transformation
     // they have a name? dut not an id
-    private static int addVariables(NodeFormula root, int start){
+    private static int addVariables(com.toposat.NodeFormula root, int start){
         if(root == null){
             return start;
         }
@@ -124,7 +124,7 @@ public class TseytinTransformation {
     }
 
     // writes formula tree, just for checking
-    static void TsTreeWalk(NodeFormula root, FileWriter Writer, int shift) throws IOException {
+    static void TsTreeWalk(com.toposat.NodeFormula root, FileWriter Writer, int shift) throws IOException {
         if(root == null){
             return;
         }
@@ -146,7 +146,7 @@ public class TseytinTransformation {
 
     // these functions add CNF clauses(according to possible types of operations) to a new tree for CNF
 
-    private static void transformCon(NodeFormula newRoot, String C, String A, String B){
+    private static void transformCon(com.toposat.NodeFormula newRoot, String C, String A, String B){
         String newFormula = "( ( ! " + A + " ) || ( ! " + B + " ) || " + C +
                 " ) && ( " + A + " || ( ! " + C +
                 " ) ) && ( "  + B + " || ( ! " + C + " ) )";
@@ -154,7 +154,7 @@ public class TseytinTransformation {
         String[] str = newFormula.trim().split("\\s+");
         makeTree(str, 0, str.length, newRoot);
     }
-    private static void transformDis(NodeFormula newRoot, String C, String A, String B){
+    private static void transformDis(com.toposat.NodeFormula newRoot, String C, String A, String B){
         String newFormula = "( " + A + " || " + B + " || ( ! " + C +
                 " ) ) && ( ( ! " + A + " ) || "  + C +
                 " ) && ( ( ! " + B + " ) || " + C + " )";
@@ -162,14 +162,14 @@ public class TseytinTransformation {
         String[] str = newFormula.trim().split("\\s+");
         makeTree(str, 0, str.length, newRoot);
     }
-    private static void transformNot(NodeFormula newRoot, String C, String A){
+    private static void transformNot(com.toposat.NodeFormula newRoot, String C, String A){
         String newFormula = "( ( ! " + A + " ) || ( ! " + C +
                 " ) ) && ( " + A + " || " + C + " )";
         System.out.println(newFormula);
         String[] str = newFormula.trim().split("\\s+");
         makeTree(str, 0, str.length, newRoot);
     }
-    private static void transformImpl(NodeFormula newRoot, String C, String A, String B){
+    private static void transformImpl(com.toposat.NodeFormula newRoot, String C, String A, String B){
         String newFormula = "( " + A + " || " + B + " || " + C +
                 " ) && ( " + A + " || ( ! " + B + " ) || " + C +
                 " ) && ( ( ! " + A + " ) || ( ! " + B + " ) || " + C +
@@ -179,7 +179,7 @@ public class TseytinTransformation {
         String[] str = newFormula.trim().split("\\s+");
         makeTree(str, 0, str.length, newRoot);
     }
-    private static void transformEquiv(NodeFormula newRoot, String C, String A, String B){
+    private static void transformEquiv(com.toposat.NodeFormula newRoot, String C, String A, String B){
         String newFormula = "( " + A + " || ( ! " + B + " ) || ( ! " + C +
                 " ) ) && ( ( ! " + A + " ) || " + B + " || ( ! " + C +
                 " ) ) && ( ( ! " + A + " ) || ( ! " + B + " ) || " + C +
@@ -189,7 +189,7 @@ public class TseytinTransformation {
         String[] str = newFormula.trim().split("\\s+");
         makeTree(str, 0, str.length, newRoot);
     }
-    private static void transformXor(NodeFormula newRoot, String C, String A, String B){
+    private static void transformXor(com.toposat.NodeFormula newRoot, String C, String A, String B){
         String newFormula = "( ( ! " + A + " ) || ( ! " + B + " ) || ( ! " + C +
                 " ) ) && ( " + A + " || " + B + " || ( ! " + C +
                 " ) ) && ( " + A + " || ( ! " + B + " ) || " + C +
@@ -201,33 +201,33 @@ public class TseytinTransformation {
     }
 
     // gets a place for a new node in formula tree
-    static NodeFormula findPlace(NodeFormula root){
+    static com.toposat.NodeFormula findPlace(com.toposat.NodeFormula root){
         if(root == null){
-            root = new NodeFormula();
+            root = new com.toposat.NodeFormula();
             root.operation = TypeOperation.conjunction;
             return root;
         }
         if(root.left == null){
-            root.left = new NodeFormula();
+            root.left = new com.toposat.NodeFormula();
             root.left.operation = TypeOperation.conjunction;
             return root.left;
         } else if(root.right == null){
-            root.right = new NodeFormula();
+            root.right = new com.toposat.NodeFormula();
             root.right.operation = TypeOperation.conjunction;
             return root.right;
         } else {
-            NodeFormula curr = root.left;
-            root.left = new NodeFormula();
+            com.toposat.NodeFormula curr = root.left;
+            root.left = new com.toposat.NodeFormula();
             root.left.left = curr;
             root.left.operation = TypeOperation.conjunction;
-            root.left.right = new NodeFormula();
+            root.left.right = new com.toposat.NodeFormula();
             root.left.right.operation = TypeOperation.conjunction;
             return root.left.right;
         }
     }
 
     // calls transforming functions for all operation nodes according to type
-    private static void transformToCNF(NodeFormula root, NodeFormula newRoot){
+    private static void transformToCNF(com.toposat.NodeFormula root, com.toposat.NodeFormula newRoot){
         if((root == null) || (root.operation == TypeOperation.variable)){
             return;
         }
@@ -238,7 +238,7 @@ public class TseytinTransformation {
             System.out.println("here");
             return;
         }
-        NodeFormula place = findPlace(newRoot);
+        com.toposat.NodeFormula place = findPlace(newRoot);
         String C = root.addVar;
         String A , B ="";
         TypeOperation t = root.operation;
@@ -264,18 +264,18 @@ public class TseytinTransformation {
         transformToCNF(root.left, newRoot);
     }
 
-    public static void startTransformationCNF(NodeFormula root, NodeFormula newRoot) {
+    public static void startTransformationCNF(com.toposat.NodeFormula root, com.toposat.NodeFormula newRoot) {
         addVariables(root, 0);
         newRoot.operation = TypeOperation.conjunction;
-        newRoot.right = new NodeFormula();
+        newRoot.right = new com.toposat.NodeFormula();
         newRoot.right.operation = TypeOperation.variable;
         newRoot.right.varName = root.addVar;
-        newRoot.left = new NodeFormula();
+        newRoot.left = new com.toposat.NodeFormula();
         newRoot = newRoot.left;
         transformToCNF(root, newRoot);
     }
 
-    static private void writeClauseSMT(NodeFormula root, FileWriter Writer, int start) throws IOException {
+    static private void writeClauseSMT(com.toposat.NodeFormula root, FileWriter Writer, int start) throws IOException {
         if(root == null){
             return;
         }
@@ -301,7 +301,7 @@ public class TseytinTransformation {
         }
     }
 
-    static private void treeWalkSMT(NodeFormula root, FileWriter Writer) throws IOException {
+    static private void treeWalkSMT(com.toposat.NodeFormula root, FileWriter Writer) throws IOException {
         if(root == null){
             return;
         }
@@ -316,7 +316,7 @@ public class TseytinTransformation {
         treeWalkSMT(root.right, Writer);
     }
 
-    static private HashSet<String> declareVariablesSMT(NodeFormula root, FileWriter Writer, HashSet<String> varNames) throws IOException {
+    static private HashSet<String> declareVariablesSMT(com.toposat.NodeFormula root, FileWriter Writer, HashSet<String> varNames) throws IOException {
         if(root == null){
             return varNames;
         }
@@ -335,7 +335,7 @@ public class TseytinTransformation {
         return varNames;
     }
     // writes CNF formula in SMT format in file filename(which is created)
-    static void writeSmtCNF(NodeFormula root, String filename) {
+    static void writeSmtCNF(com.toposat.NodeFormula root, String filename) {
         try {
             File formulaFile = new File(filename);
             formulaFile.createNewFile();
@@ -384,13 +384,13 @@ public class TseytinTransformation {
             //filePath = "/home/nastya/Documents/java/Demo.txt";
             String[] split = formulaFromFile(filePath);
 
-            NodeFormula root = new NodeFormula();
+            com.toposat.NodeFormula root = new com.toposat.NodeFormula();
             makeTree(split, 0, split.length, root);
             FileWriter Writer = new FileWriter("treeFile.txt");
             TsTreeWalk(root, Writer, 0);
             Writer.close();
 
-            NodeFormula place = new NodeFormula();
+            com.toposat.NodeFormula place = new NodeFormula();
             place.operation = TypeOperation.conjunction;
             startTransformationCNF(root, place);
             transformToCNF(root, place);

@@ -1,4 +1,4 @@
-package com.company;
+package com.toposat;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,7 +22,7 @@ public class numberVariables {
         return clcnt;
     }
 
-    private void recursiveDeclareSMT(NodeFormula root) throws IOException {
+    private void recursiveDeclareSMT(com.toposat.NodeFormula root) throws IOException {
         if(root == null){
             return;
         }
@@ -40,13 +40,13 @@ public class numberVariables {
         recursiveDeclareSMT(root.right);
     }
 
-    void declareVariablesSMT(NodeFormula root, FileWriter fw) throws IOException {
+    void declareVariablesSMT(com.toposat.NodeFormula root, FileWriter fw) throws IOException {
         varNames = new HashSet<>();
         Writer = fw;
         recursiveDeclareSMT(root);
     }
 
-    private void recursiveNumber(NodeFormula root,  int not){
+    private void recursiveNumber(com.toposat.NodeFormula root, int not){
         if(root == null){
             return;
         }
@@ -57,22 +57,18 @@ public class numberVariables {
                 if(not == 1){
                     root.var = -count;
                 }
-                //System.out.println("root.varName " + root.varName);
-                //System.out.println("root.var " + root.var);
                 count += 1;
             } else {
                 root.var = varNumbers.get(root.varName);
-                //System.out.println("root.varName " + root.varName);
-                //System.out.println("root.var " + root.var);
                 if(not == 1){
                     root.var = -varNumbers.get(root.varName);;
                 }
             }
             return;
         }
-        if(root.operation == TypeOperation.conjunction){
+        if(root.operation == com.toposat.TypeOperation.conjunction){
             if(root.left != null && root.right != null &&
-                    (root.left.operation != TypeOperation.conjunction ||  root.right.operation != TypeOperation.conjunction)){
+                    (root.left.operation != com.toposat.TypeOperation.conjunction ||  root.right.operation != com.toposat.TypeOperation.conjunction)){
                 clcnt += 1;
             }
         }

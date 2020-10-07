@@ -1,4 +1,4 @@
-package com.company;
+package com.toposat;
 
 public class NodeFormula { // node in cnf
 

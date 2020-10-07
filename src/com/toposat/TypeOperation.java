@@ -1,4 +1,4 @@
-package com.company;
+package com.toposat;
 
 public enum TypeOperation { // string representations
     conjunction, // &&

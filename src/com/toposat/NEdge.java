@@ -1,4 +1,4 @@
-package com.company;
+package com.toposat;
 
 import org.jgrapht.graph.DefaultEdge;
 
