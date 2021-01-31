@@ -153,6 +153,7 @@ public class ReductionGraph {
         return true_var;
     }
 
+    // parse result file smt
     public static Vector<String> getAnsSMT(String filename) {
         Vector<String> true_var = new Vector<>();
         try {
@@ -160,7 +161,7 @@ public class ReductionGraph {
             Scanner Reader = new Scanner(res);
             String line = Reader.nextLine();
             if (line.equals("unsat")) {
-                System.out.println("Unsatisfiable formula");
+//                System.out.println("Unsatisfiable formula");
                 return true_var;
             }
             if (!line.equals("sat")) {
@@ -202,6 +203,54 @@ public class ReductionGraph {
         p.waitFor();
     }
 
+    // file modification to add clauses
+    private static void removeEnding(String filename) {
+        try {
+            RandomAccessFile raf = new RandomAccessFile(filename, "rw");
+            long length = raf.length();
+            // ending is 24 symbols:
+            // (check-sat)
+            // (get-model)
+            raf.setLength(length - 24);
+            raf.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    // find all solutions with Z3
+    public static Vector<Vector<String>> solveAllSMTZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
+        File result = new File(resultFile);
+        result.createNewFile();
+        ProcessBuilder b = new ProcessBuilder(path, "-smt2", questionFile);
+        b.redirectOutput(result);
+        Process p = b.start();
+        p.waitFor();
+        Vector<String> trueVar = getAnsSMT(resultFile);
+        Vector<Vector<String>> solutions = new Vector<>();
+        while (!trueVar.isEmpty()) {
+            solutions.addElement(trueVar);
+            removeEnding(questionFile);
+            FileWriter fw = new FileWriter(questionFile, true);
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write("(assert (and ");
+            for (String var : trueVar) {
+                bw.write("(not " + var + " ) ");
+            }
+            bw.write("))\n");
+            bw.write("(check-sat)\n");
+            bw.write("(get-model)\n");
+            bw.close();
+
+            ProcessBuilder pb = new ProcessBuilder(path, "-smt2", questionFile);
+            pb.redirectOutput(result);
+            Process proc = pb.start();
+            proc.waitFor();
+            trueVar = getAnsSMT(resultFile);
+        }
+        return solutions;
+    }
+
     public static void solveCNFPainless(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
         File result = new File(resultFile);
         result.createNewFile();
@@ -222,23 +271,31 @@ public class ReductionGraph {
     static String m_fileGraphInput = "";
 
     static private NodeFormula m_root;
+
     public NodeFormula getRoot() {
         return m_root;
     }
-    public void setRoot(NodeFormula newRoot) { m_root = newRoot; }
+
+    public void setRoot(NodeFormula newRoot) {
+        m_root = newRoot;
+    }
 
     static private Graph<NVertex, NEdge> m_graph;
+
     public Graph<NVertex, NEdge> getGraph() {
         return m_graph;
     }
+
     public void setGraph(Graph<NVertex, NEdge> newGraph) {
         m_graph = newGraph;
     }
 
     static private Visitor m_visitor;
+
     public Visitor getVisitor() {
         return m_visitor;
     }
+
     public void setVisitor(Visitor newVisitor) {
         m_visitor = newVisitor;
     }
@@ -278,8 +335,7 @@ public class ReductionGraph {
                 continue;
             }
 
-            if (i != args.length - 1)
-            {
+            if (i != args.length - 1) {
                 System.out.println("Too many arguments.");
                 System.out.println(m_strUsage);
                 return;
@@ -337,19 +393,34 @@ public class ReductionGraph {
         if (m_solver.equals("z3")) {
             String questionFile = "newFormulaChrSmt.cnf";
             TseytinTransformation.writeSmtCNF(m_root, questionFile);
-            String path = args[1];
+            String path = m_solverPath;
             String resultFile = "resChr.sat";
-            solveSMTZ3(path, resultFile, questionFile);
-            Vector<String> trueVar = getAnsSMT(resultFile);
-            System.out.println("True variables:");
-            for(String v : trueVar) {
-                String a = v.split("_")[0];
-                System.out.println(a);
-                if (nodes.containsKey(a)) {
-                    System.out.println(v + " " + nodes.get(a).getName());
+//            solveSMTZ3(path, resultFile, questionFile);
+//            Vector<String> trueVar = getAnsSMT(resultFile);
+//            System.out.println("True variables:");
+//            for(String v : trueVar) {
+//                String a = v.split("_")[0];
+//                System.out.println(a);
+//                if (nodes.containsKey(a)) {
+//                    System.out.println(v + " " + nodes.get(a).getName());
+//                }
+//            }
+
+            Vector<Vector<String>> results = solveAllSMTZ3(path, resultFile, questionFile);
+            System.out.println(results.size());
+            int i = 0;
+            for (Vector<String> trueVar : results) {
+                System.out.println("Solution " + i);
+                for (String v : trueVar) {
+                    String a = v.split("_")[0];
+                    System.out.println(a);
+//                    if (nodes.containsKey(a)) {
+//                        System.out.println(v + " " + nodes.get(a).getName());
+//                    }
                 }
+                ++i;
             }
         }
+
     }
 }
-

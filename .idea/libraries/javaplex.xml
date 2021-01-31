@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="javaplex">
+    <CLASSES />
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://$USER_HOME$/Documents/libs/javaplex-4.3.4/src/java" />
+      <root url="file://$USER_HOME$/Documents/libs/javaplex-4.3.4/src/processing/javaplexDemo" />
+      <root url="file://$USER_HOME$/Documents/libs/javaplex-4.3.4/src_test/java" />
+    </SOURCES>
+  </library>
+</component>
