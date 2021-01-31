@@ -233,7 +233,7 @@ public class ReductionGraph {
             removeEnding(questionFile);
             FileWriter fw = new FileWriter(questionFile, true);
             BufferedWriter bw = new BufferedWriter(fw);
-            bw.write("(assert (and ");
+            bw.write("(assert (or ");
             for (String var : trueVar) {
                 bw.write("(not " + var + " ) ");
             }
