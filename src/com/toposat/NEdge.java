@@ -27,6 +27,13 @@ public class NEdge  extends DefaultEdge {
         return this.toString().hashCode();
     }
 
+    public NVertex getFirst() {
+        return (NVertex) this.getSource();
+    }
+    public NVertex getSecond() {
+        return (NVertex) this.getTarget();
+    }
+
     @Override
     public boolean equals(Object obj) {
         boolean result;

@@ -97,7 +97,18 @@ public class CSVisitor implements VisitorGraphToFormula {
     }
 
     public void visitEdge(NodeFormula curr, NEdge edge, Graph<NVertex, NEdge> graph) {
-
+//        System.out.println("visit edge");
+        NVertex first = edge.getFirst();
+        NVertex second = edge.getSecond();
+        for (int i = 1; i < cliqueSize; ++i) {
+            processPair(curr, first, second, i, i);
+            curr.operation = com.toposat.TypeOperation.conjunction;
+            curr.right = new com.toposat.NodeFormula();
+            processPair(curr.right, first, second, i, i);
+            curr.left = new com.toposat.NodeFormula();
+            curr = curr.left;
+        }
+        processPair(curr, first, second, cliqueSize, cliqueSize);
 
     }
 }

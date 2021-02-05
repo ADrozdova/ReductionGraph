@@ -218,6 +218,44 @@ public class ReductionGraph {
         }
     }
 
+    private static void printPermutation(BufferedWriter bw, String[] elements, int n) throws IOException {
+        bw.write("(assert (or ");
+        for (int i = 1; i <= n; ++i) {
+            bw.write("(not " + elements[i-1] + "_" + i + " ) ");
+        }
+
+        bw.write("))\n");
+    }
+
+    private static void swap(String[] input, int a, int b) {
+        String  tmp = input[a];
+        input[a] = input[b];
+        input[b] = tmp;
+    }
+
+    private static void getPermutationsHeap(BufferedWriter bw, String[] elements, int n) throws IOException {
+        int[] indexes = new int[n];
+        for (int i = 0; i < n; i++) {
+            indexes[i] = 0;
+        }
+
+        printPermutation(bw, elements, n);
+
+        int i = 0;
+        while (i < n) {
+            if (indexes[i] < i) {
+                swap(elements, i % 2 == 0 ?  0: indexes[i], i);
+                printPermutation(bw, elements, n);
+                indexes[i]++;
+                i = 0;
+            }
+            else {
+                indexes[i] = 0;
+                i++;
+            }
+        }
+    }
+
     // find all solutions with Z3
     public static Vector<Vector<String>> solveAllSMTZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
         File result = new File(resultFile);
@@ -233,10 +271,12 @@ public class ReductionGraph {
             removeEnding(questionFile);
             FileWriter fw = new FileWriter(questionFile, true);
             BufferedWriter bw = new BufferedWriter(fw);
+
             bw.write("(assert (or ");
             for (String var : trueVar) {
                 bw.write("(not " + var + " ) ");
             }
+
             bw.write("))\n");
             bw.write("(check-sat)\n");
             bw.write("(get-model)\n");
@@ -247,6 +287,57 @@ public class ReductionGraph {
             Process proc = pb.start();
             proc.waitFor();
             trueVar = getAnsSMT(resultFile);
+
+            PrintWriter writer = new PrintWriter(resultFile);
+            writer.print("");
+            writer.close();
+        }
+        return solutions;
+    }
+
+    public static Vector<Vector<String>> AllQliqueZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
+        File result = new File(resultFile);
+        result.createNewFile();
+        ProcessBuilder b = new ProcessBuilder(path, "-smt2", questionFile);
+        b.redirectOutput(result);
+        Process p = b.start();
+        p.waitFor();
+        Vector<String> trueVar = getAnsSMT(resultFile);
+        Vector<Vector<String>> solutions = new Vector<>();
+        while (!trueVar.isEmpty()) {
+            solutions.addElement(trueVar);
+            removeEnding(questionFile);
+            FileWriter fw = new FileWriter(questionFile, true);
+            BufferedWriter bw = new BufferedWriter(fw);
+
+//            if (trueVar.size() > n) {
+//                System.out.println("here " + n + " " + trueVar.size());
+//                for (int i = trueVar.size() - 1; i > n - 1; --i) {
+//                    trueVar.remove(i);
+//                }
+//                System.out.println("and here " + n + " " + trueVar.size());
+//            }
+
+            String[] variables = new String[trueVar.size() ];
+            for (int i = 0; i < trueVar.size() ; ++i) {
+                variables[i] = trueVar.get(i).split("_")[0];
+            }
+
+            getPermutationsHeap(bw, variables, trueVar.size() );
+
+            bw.write("(check-sat)\n");
+            bw.write("(get-model)\n");
+            bw.close();
+
+            ProcessBuilder pb = new ProcessBuilder(path, "-smt2", questionFile);
+            pb.redirectOutput(result);
+            Process proc = pb.start();
+            proc.waitFor();
+            trueVar = getAnsSMT(resultFile);
+
+            PrintWriter writer = new PrintWriter(resultFile);
+            writer.print("");
+            writer.close();
         }
         return solutions;
     }
@@ -370,7 +461,8 @@ public class ReductionGraph {
 
 
         CSVisitor myVisitor = new CSVisitor();
-        myVisitor.cliqueSize = 3;
+        int clique_size = 3;
+        myVisitor.cliqueSize = clique_size;
 
         traverseGraphNodes(myVisitor);
         traverseGraphEdges(myVisitor);
@@ -406,17 +498,17 @@ public class ReductionGraph {
 //                }
 //            }
 
-            Vector<Vector<String>> results = solveAllSMTZ3(path, resultFile, questionFile);
+            Vector<Vector<String>> results = AllQliqueZ3(path, resultFile, questionFile);
             System.out.println(results.size());
             int i = 0;
             for (Vector<String> trueVar : results) {
                 System.out.println("Solution " + i);
                 for (String v : trueVar) {
                     String a = v.split("_")[0];
-                    System.out.println(a);
-//                    if (nodes.containsKey(a)) {
-//                        System.out.println(v + " " + nodes.get(a).getName());
-//                    }
+//                    System.out.println(a);
+                    if (nodes.containsKey(a)) {
+                        System.out.println(v + " " + nodes.get(a).getName());
+                    }
                 }
                 ++i;
             }
