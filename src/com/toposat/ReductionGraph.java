@@ -153,7 +153,7 @@ public class ReductionGraph {
         return true_var;
     }
 
-    // parse result file smt
+    // parse result file smt - getting true variables
     public static Vector<String> getAnsSMT(String filename) {
         Vector<String> true_var = new Vector<>();
         try {
@@ -185,6 +185,40 @@ public class ReductionGraph {
             e.printStackTrace();
         }
         return true_var;
+    }
+
+    // getting false variables
+    public static Vector<String> getFalseSMT(String filename) {
+        Vector<String> false_var = new Vector<>();
+        try {
+            File res = new File(filename);
+            Scanner Reader = new Scanner(res);
+            String line = Reader.nextLine();
+            if (line.equals("unsat")) {
+//                System.out.println("Unsatisfiable formula");
+                return false_var;
+            }
+            if (!line.equals("sat")) {
+                System.out.println("Bad format");
+                return false_var;
+            }
+            while (Reader.hasNextLine()) {
+                line = Reader.nextLine();
+                if (line.contains("define-fun")) {
+                    String variable = line.replace("  (define-fun ", "");
+                    variable = variable.replace(" () Bool", "");
+                    line = Reader.nextLine();
+                    if (line.contains("false")) {
+                        false_var.addElement(variable);
+                    }
+
+                }
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("An error occurred.");
+            e.printStackTrace();
+        }
+        return false_var;
     }
 
     static public Element getDocRoot(String filename) throws ParserConfigurationException, IOException, SAXException {
@@ -256,8 +290,8 @@ public class ReductionGraph {
         }
     }
 
-    // find all solutions with Z3
-    public static Vector<Vector<String>> solveAllSMTZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
+    // find all-sat solutions with Z3
+    public static Vector<Vector<String>> solveAllSATZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
         File result = new File(resultFile);
         result.createNewFile();
         ProcessBuilder b = new ProcessBuilder(path, "-smt2", questionFile);
@@ -265,8 +299,11 @@ public class ReductionGraph {
         Process p = b.start();
         p.waitFor();
         Vector<String> trueVar = getAnsSMT(resultFile);
+        Vector<String> falseVar = getFalseSMT(resultFile);
         Vector<Vector<String>> solutions = new Vector<>();
+        int i = 0;
         while (!trueVar.isEmpty()) {
+            ++i;
             solutions.addElement(trueVar);
             removeEnding(questionFile);
             FileWriter fw = new FileWriter(questionFile, true);
@@ -275,6 +312,9 @@ public class ReductionGraph {
             bw.write("(assert (or ");
             for (String var : trueVar) {
                 bw.write("(not " + var + " ) ");
+            }
+            for (String var : falseVar) {
+                bw.write(var + " ");
             }
 
             bw.write("))\n");
@@ -287,6 +327,7 @@ public class ReductionGraph {
             Process proc = pb.start();
             proc.waitFor();
             trueVar = getAnsSMT(resultFile);
+            falseVar = getFalseSMT(resultFile);
 
             PrintWriter writer = new PrintWriter(resultFile);
             writer.print("");
@@ -295,7 +336,7 @@ public class ReductionGraph {
         return solutions;
     }
 
-    public static Vector<Vector<String>> AllQliqueZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
+    public static Vector<Vector<String>> AllCliqueZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
         File result = new File(resultFile);
         result.createNewFile();
         ProcessBuilder b = new ProcessBuilder(path, "-smt2", questionFile);
@@ -498,7 +539,22 @@ public class ReductionGraph {
 //                }
 //            }
 
-            Vector<Vector<String>> results = AllQliqueZ3(path, resultFile, questionFile);
+//            Vector<Vector<String>> results = AllCliqueZ3(path, resultFile, questionFile);
+//            System.out.println(results.size());
+//            int i = 0;
+//            for (Vector<String> trueVar : results) {
+//                System.out.println("Solution " + i);
+//                for (String v : trueVar) {
+//                    String a = v.split("_")[0];
+////                    System.out.println(a);
+//                    if (nodes.containsKey(a)) {
+//                        System.out.println(v + " " + nodes.get(a).getName());
+//                    }
+//                }
+//                ++i;
+//            }
+
+            Vector<Vector<String>> results = solveAllSATZ3(path, resultFile, questionFile);
             System.out.println(results.size());
             int i = 0;
             for (Vector<String> trueVar : results) {
@@ -512,6 +568,7 @@ public class ReductionGraph {
                 }
                 ++i;
             }
+
         }
 
     }
