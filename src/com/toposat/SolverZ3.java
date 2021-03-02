@@ -35,7 +35,7 @@ public class SolverZ3 implements Solver {
 
     @Override
     public String getName() {
-        return "painless";
+        return "z3";
     }
 
     @Override

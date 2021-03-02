@@ -2,7 +2,7 @@
   <artifact type="jar" name="ReductionGraph:jar">
     <output-path>$PROJECT_DIR$/out/artifacts/ReductionGraph_jar</output-path>
     <root id="archive" name="ReductionGraph.jar">
-      <element id="module-output" name="ReductionGraph" />
+      <element id="module-output" name="ReductionSimplicialComplex" />
     </root>
   </artifact>
 </component>

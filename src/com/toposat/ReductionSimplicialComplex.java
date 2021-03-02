@@ -7,16 +7,18 @@ import java.io.*;
 import java.util.*;
 
 
-public class ReductionGraph {
+public class ReductionSimplicialComplex {
 
     // ====================================================================
     // Configuration
     // -e solver -p solverPath graphFile
     static String m_strUsage =
-            "Usage: java -jar ReductionGraph.jar [OPTION]... [FILE]..." +
-            "Options:\n" +
-            "\t-e [SOLVER]\twhere SOLVER = painless|z3\n" +
-            "\t-p [PATH TO SOLVER]\t\t\t--path-to-engine [PATH TO SOLVER]\n";
+            """
+                    Usage: java -jar ReductionGraph.jar [OPTION]... [FILE]...Options:
+                        -e [SOLVER]     where SOLVER = painless|z3
+                        -p [PATH TO SOLVER]
+                        --path-to-engine [PATH TO SOLVER]
+                    """;
 
     static String m_solverName = "default";
     static String m_solverPath = "";
@@ -27,9 +29,9 @@ public class ReductionGraph {
     // ====================================================================
     // Static members
     static private NodeFormula m_nodeFormulaRoot;
-    static private ComplexSimplicialAbstract m_complexAS = new ComplexSimplicialAbstract();
+    static private final ComplexSimplicialAbstract m_complexAS = new ComplexSimplicialAbstract();
 
-    static private LinkedHashMap<String, NVertex> m_nodesGraph = new LinkedHashMap<>();
+    static private final LinkedHashMap<String, NVertex> m_nodesGraph = new LinkedHashMap<>();
 
     static private Visitor m_visitorCurrent;
     private static Solver m_solver;
@@ -88,12 +90,14 @@ public class ReductionGraph {
 
         initialize();
 
+        /*
         if (true) {
             VisitorNCycle myVisitor = new VisitorNCycle();
 
             m_complexAS.traverseGraphNodes(myVisitor, m_nodeFormulaRoot);
             return;
         }
+        */
 
         VisitorCliqueSearch myVisitor = new VisitorCliqueSearch();
         myVisitor.cliqueSize = 3;
@@ -102,13 +106,13 @@ public class ReductionGraph {
         m_complexAS.traverseGraphEdges(myVisitor, m_nodeFormulaRoot);
         m_complexAS.traverseGraphNonEdges(myVisitor, m_nodeFormulaRoot);
         m_complexAS.traverseGraph(myVisitor, m_nodeFormulaRoot);
-        
+
         m_solver.Solve(m_nodeFormulaRoot);
 
         if (m_solver.getName().equals("painless"))
         {
             Vector<Integer> trueVar = m_solver.getResultsIntegerVector();
-            if (!trueVar.isEmpty()) {
+            if (trueVar!=null && !trueVar.isEmpty()) {
                 for (int v : trueVar) {
                     System.out.println(v);
                 }
@@ -277,11 +281,12 @@ public class ReductionGraph {
         String inputFilepath = m_solver.getInputFilepath();
 
         int numSolutions = 0;
-        while (!trueVar.isEmpty()) {
+        while (!trueVar.isEmpty() || !falseVar.isEmpty()) {
             ++numSolutions;
             solutions.addElement(trueVar);
 
             ProcessorFiles.cutFileTail(inputFilepath);
+
             FileWriter fw = new FileWriter(inputFilepath, true);
             BufferedWriter bw = new BufferedWriter(fw);
 
@@ -300,6 +305,7 @@ public class ReductionGraph {
 
             m_solver.SolveContinue();
             trueVar = m_solver.getStringVectorTrueVariables();
+            falseVar = m_solver.getStringVectorFalseVariables();
 
         }
         return solutions;

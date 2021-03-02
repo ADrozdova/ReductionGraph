@@ -1,0 +1,8 @@
+(declare-const n0_2 Bool)
+(declare-const n0_3 Bool)
+(declare-const n0_1 Bool)
+(assert (or n0_2 n0_3 ))
+(assert (or (not n0_1 ) (not n0_3 ) ))
+(assert (or (not n0_1 ) (not n0_2 ) ))
+(check-sat)
+(get-model)

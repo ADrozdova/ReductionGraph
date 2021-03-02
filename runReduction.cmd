@@ -1,0 +1,1 @@
+java -classpath out\production\ReductionSimplicialComplex;d:\do\TopoSAT\TopoSAT\jgrapht-1.5.0\lib\jgrapht-core-1.5.0.jar com.toposat.ReductionSimplicialComplex -e z3 -p d:\do\TopoSAT\TopoSAT\z3-4.8.10-x64-win\bin\z3 ingraph.graphml

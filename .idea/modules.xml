@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/ReductionGraph.iml" filepath="$PROJECT_DIR$/ReductionGraph.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ReductionSimplicialComplex.iml" filepath="$PROJECT_DIR$/ReductionSimplicialComplex.iml" />
     </modules>
   </component>
 </project>
