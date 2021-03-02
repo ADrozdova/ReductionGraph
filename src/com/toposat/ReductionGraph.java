@@ -11,36 +11,28 @@ import org.jgrapht.graph.*;
 
 
 public class ReductionGraph {
-    // parsing from .graphml to Graph
-    public static void getGraph(Element root, LinkedHashMap<String, NVertex> nodes, Graph<NVertex, NEdge> graph) {
-        NodeList cList = root.getChildNodes();
-        int cnt = 1;
-        int id = 1;
-        for (int i = 0; i < cList.getLength(); ++i) {
-            org.w3c.dom.Node node = cList.item(i);
-            if (node.getNodeType() == org.w3c.dom.Node.ELEMENT_NODE) {
-                Element eElement = (Element) node;
-                if (node.getNodeName().equals("node")) {
-                    String label = eElement.getAttribute("id");
-                    NVertex v;
-                    if (eElement.getElementsByTagName("y:NodeLabel").getLength() == 0) {
-                        v = new NVertex(label, id, "");
-                    } else {
-                        v = new NVertex(label, id, eElement.getElementsByTagName("y:NodeLabel").item(0).getTextContent());
-                    }
-                    graph.addVertex(v);
-                    nodes.put(label, v);
-                    ++id;
-                }
-                if (node.getNodeName().equals("edge")) {
-                    NEdge e = new NEdge(eElement.getAttribute("id"), cnt, cnt + 1);
-                    graph.addEdge(nodes.get(eElement.getAttribute("source")), nodes.get(eElement.getAttribute("target")), e);
-                    cnt += 2;
-                }
-                getGraph(eElement, nodes, graph);
-            }
-        }
-    }
+
+    // ====================================================================
+    // Configuration
+    // -e solver -p solverPath graphFile
+    static String m_strUsage = "Usage: java -jar ReductionGraph.jar [OPTION]... [FILE]..." +
+            "Options:\n" + "\t-e [SOLVER]\twhere SOLVER = painless|z3\n" +
+            "\t-p [PATH TO SOLVER]\t\t\t--path-to-engine [PATH TO SOLVER]\n";
+
+    static String m_solver = "default";
+    static String m_solverPath = "";
+    static String m_fileGraphInput = "";
+    // End of: Configuration
+    // ====================================================================
+
+    // ====================================================================
+    // Static members
+    static private NodeFormula m_root;
+    static private Graph<NVertex, NEdge> m_graph;
+    static private Visitor m_visitor;
+    // End of: Static members
+    // ====================================================================
+
 
     // recursive writer of formula from a tree(for CNF) in dimacs
     public static int treeWalkCNFdimacs(NodeFormula root, FileWriter Writer) throws IOException {
@@ -67,24 +59,6 @@ public class ReductionGraph {
         return was_zero;
     }
 
-    // writing .cnf file in dimacs
-
-    public static void writeDimacsCNF(NodeFormula root, String filename) {
-        numberVariables nv = new numberVariables();
-        nv.declareVariablesCNF(root);
-        try {
-            File formulaFile = new File(filename);
-            formulaFile.createNewFile();
-            FileWriter Writer = new FileWriter(filename);
-            Writer.write("p cnf " + nv.getVarcnt() + " " + nv.getClcnt() + "\n");
-            treeWalkCNFdimacs(root, Writer);
-            Writer.close();
-        } catch (IOException e) {
-            System.out.println("An error occured.");
-            e.printStackTrace();
-        }
-    }
-
     // adds clauses to formula tree
 
     public static void traverseGraphNodes(Visitor myVisitor) {
@@ -103,6 +77,7 @@ public class ReductionGraph {
         }
     }
 
+    // Traverse all non-adjacent vertex pairs
     public static void traverseGraphNonEdges(Visitor myVisitor) {
         Set<NVertex> vertices = m_graph.vertexSet();
         for (NVertex first : vertices) {
@@ -120,112 +95,6 @@ public class ReductionGraph {
     public static void traverseGraph(Visitor myVisitor) {
         NodeFormula placeCurrent = TseytinTransformation.findPlace(m_root);
         myVisitor.visitGraph(placeCurrent, m_graph);
-    }
-
-    // reads result file with SAT solver ansver and gets true variables
-    public static Vector<Integer> getAnsDimacs(String filename) {
-        Vector<Integer> true_var = new Vector<>();
-        try {
-            File res = new File(filename);
-            Scanner Reader = new Scanner(res);
-            while (Reader.hasNextLine()) {
-                String line = Reader.nextLine();
-                String[] arr = line.split(" ");
-                if (arr[0].equals("s")) {
-                    if (arr[1].equals("UNSATISFIABLE")) {
-                        System.out.println("Unsatisfiable formula");
-                        return true_var;
-                    }
-                }
-                if (arr[0].equals("v")) {
-                    for (int i = 1; i < arr.length; ++i) {
-                        int elem = Integer.parseInt(arr[i]);
-                        if (elem > 0) {
-                            true_var.addElement(elem);
-                        }
-                    }
-                }
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-        return true_var;
-    }
-
-    // parse result file smt - getting true variables
-    public static Vector<String> getAnsSMT(String filename) {
-        Vector<String> true_var = new Vector<>();
-        try {
-            File res = new File(filename);
-            Scanner Reader = new Scanner(res);
-            String line = Reader.nextLine();
-            if (line.equals("unsat")) {
-//                System.out.println("Unsatisfiable formula");
-                return true_var;
-            }
-            if (!line.equals("sat")) {
-                System.out.println("Bad format");
-                return true_var;
-            }
-            while (Reader.hasNextLine()) {
-                line = Reader.nextLine();
-                if (line.contains("define-fun")) {
-                    String variable = line.replace("  (define-fun ", "");
-                    variable = variable.replace(" () Bool", "");
-                    line = Reader.nextLine();
-                    if (line.contains("true")) {
-                        true_var.addElement(variable);
-                    }
-
-                }
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-        return true_var;
-    }
-
-    // getting false variables
-    public static Vector<String> getFalseSMT(String filename) {
-        Vector<String> false_var = new Vector<>();
-        try {
-            File res = new File(filename);
-            Scanner Reader = new Scanner(res);
-            String line = Reader.nextLine();
-            if (line.equals("unsat")) {
-//                System.out.println("Unsatisfiable formula");
-                return false_var;
-            }
-            if (!line.equals("sat")) {
-                System.out.println("Bad format");
-                return false_var;
-            }
-            while (Reader.hasNextLine()) {
-                line = Reader.nextLine();
-                if (line.contains("define-fun")) {
-                    String variable = line.replace("  (define-fun ", "");
-                    variable = variable.replace(" () Bool", "");
-                    line = Reader.nextLine();
-                    if (line.contains("false")) {
-                        false_var.addElement(variable);
-                    }
-
-                }
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-        return false_var;
-    }
-
-    static public Element getDocRoot(String filename) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(new File(filename));
-        return document.getDocumentElement();
     }
 
     public static void solveSMTZ3(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
@@ -257,7 +126,6 @@ public class ReductionGraph {
         for (int i = 1; i <= n; ++i) {
             bw.write("(not " + elements[i-1] + "_" + i + " ) ");
         }
-
         bw.write("))\n");
     }
 
@@ -298,8 +166,8 @@ public class ReductionGraph {
         b.redirectOutput(result);
         Process p = b.start();
         p.waitFor();
-        Vector<String> trueVar = getAnsSMT(resultFile);
-        Vector<String> falseVar = getFalseSMT(resultFile);
+        Vector<String> trueVar = ProcessorFiles.readResultFileSMTLIB(resultFile);
+        Vector<String> falseVar = ProcessorFiles.extractFalseVarsFromFileSMT(resultFile);
         Vector<Vector<String>> solutions = new Vector<>();
         int i = 0;
         while (!trueVar.isEmpty()) {
@@ -326,8 +194,8 @@ public class ReductionGraph {
             pb.redirectOutput(result);
             Process proc = pb.start();
             proc.waitFor();
-            trueVar = getAnsSMT(resultFile);
-            falseVar = getFalseSMT(resultFile);
+            trueVar = ProcessorFiles.readResultFileSMTLIB(resultFile);
+            falseVar = ProcessorFiles.extractFalseVarsFromFileSMT(resultFile);
 
             PrintWriter writer = new PrintWriter(resultFile);
             writer.print("");
@@ -343,7 +211,7 @@ public class ReductionGraph {
         b.redirectOutput(result);
         Process p = b.start();
         p.waitFor();
-        Vector<String> trueVar = getAnsSMT(resultFile);
+        Vector<String> trueVar = ProcessorFiles.readResultFileSMTLIB(resultFile);
         Vector<Vector<String>> solutions = new Vector<>();
         while (!trueVar.isEmpty()) {
             solutions.addElement(trueVar);
@@ -374,7 +242,7 @@ public class ReductionGraph {
             pb.redirectOutput(result);
             Process proc = pb.start();
             proc.waitFor();
-            trueVar = getAnsSMT(resultFile);
+            trueVar = ProcessorFiles.readResultFileSMTLIB(resultFile);
 
             PrintWriter writer = new PrintWriter(resultFile);
             writer.print("");
@@ -383,60 +251,46 @@ public class ReductionGraph {
         return solutions;
     }
 
-    public static void solveCNFPainless(String path, String resultFile, String questionFile) throws IOException, InterruptedException {
-        File result = new File(resultFile);
-        result.createNewFile();
-        ProcessBuilder b = new ProcessBuilder(path, questionFile);
-        b.redirectOutput(result);
-        Process p = b.start();
-        p.waitFor();
-    }
-
-    ///home/nastya/Documents/hse19-20/pReductionGraph/graph_examples/graph2.graphml
-
-    // -e solver -p solverPath graphFile
-    static String m_strUsage = "Usage: java -jar ReductionGraph.jar [OPTION]... [FILE]..." +
-            "Options:\n" + "\t-e [SOLVER]\twhere SOLVER = painless|z3\n" +
-            "\t-p [PATH TO SOLVER]\t\t\t--path-to-engine [PATH TO SOLVER]\n";
-    static String m_solver = "default";
-    static String m_solverPath = "";
-    static String m_fileGraphInput = "";
-
-    static private NodeFormula m_root;
+    // ====================================================================
+    // Getters/Setters
 
     public NodeFormula getRoot() {
         return m_root;
     }
-
     public void setRoot(NodeFormula newRoot) {
         m_root = newRoot;
     }
 
-    static private Graph<NVertex, NEdge> m_graph;
-
     public Graph<NVertex, NEdge> getGraph() {
         return m_graph;
     }
-
     public void setGraph(Graph<NVertex, NEdge> newGraph) {
         m_graph = newGraph;
     }
 
-    static private Visitor m_visitor;
-
     public Visitor getVisitor() {
         return m_visitor;
     }
-
     public void setVisitor(Visitor newVisitor) {
         m_visitor = newVisitor;
     }
+    // End of: Getters/Setters
+    // ====================================================================
+
+    void callVisitorNCycle()
+    {
+
+    }
 
     public static void main(String[] args) throws IOException, SAXException, ParserConfigurationException, InterruptedException {
+
+        // ====================================================================
+        // Arguments processing
         if (args.length == 0) {
             System.out.println(m_strUsage);
             return;
         }
+
         for (int i = 0; i < args.length; ++i) {
             if (args[i].equals("-e")) {
                 if (i + 1 == args.length) {
@@ -473,7 +327,6 @@ public class ReductionGraph {
                 return;
             }
             m_fileGraphInput = args[i];
-
         }
 
         if (m_fileGraphInput.equals("")) {
@@ -491,19 +344,31 @@ public class ReductionGraph {
         if (m_solver.equals("default")) {
             System.out.println("Warning: 'painless' is selected as a solver by default.");
         }
+        // End of: Arguments processing
+        // ====================================================================
 
         m_graph = new DefaultUndirectedGraph<>(NEdge.class);
         LinkedHashMap<String, NVertex> nodes = new LinkedHashMap<>();
 
-        getGraph(getDocRoot(m_fileGraphInput), nodes, m_graph);
+        //TODO:remove
+        m_fileGraphInput = "graph2.graphml";
+
+        Element docElement = ProcessorFiles.readXMLFile(m_fileGraphInput);
+        ProcessorFiles.extractGraph(docElement, nodes, m_graph);
 
         m_root = new NodeFormula();
         m_root.operation = TypeOperation.conjunction;
 
+        if (true) {
+            VisitorNCycle myVisitor = new VisitorNCycle();
 
-        CSVisitor myVisitor = new CSVisitor();
-        int clique_size = 3;
-        myVisitor.cliqueSize = clique_size;
+            traverseGraphNodes(myVisitor);
+
+            return;
+        }
+
+        VisitorCliqueSearch myVisitor = new VisitorCliqueSearch();
+        myVisitor.cliqueSize = 3;
 
         traverseGraphNodes(myVisitor);
         traverseGraphEdges(myVisitor);
@@ -512,10 +377,10 @@ public class ReductionGraph {
 
         if (m_solver.equals("painless")) {
             String questionFile = "newFormulaCliqueCnf.cnf";
-            writeDimacsCNF(m_root, questionFile);
+            ProcessorFiles.writeDimacsCNF(m_root, questionFile);
             String resultFile = "resClique.sat";
-            solveCNFPainless(m_solverPath, resultFile, questionFile);
-            Vector<Integer> trueVar = getAnsDimacs(resultFile);
+            LauncherSATSolver.solveCNFPainless(m_solverPath, resultFile, questionFile);
+            Vector<Integer> trueVar = ProcessorFiles.readResultFileDimacs(resultFile);
 
             if (!trueVar.isEmpty()) {
                 for (int v : trueVar) {
@@ -523,6 +388,7 @@ public class ReductionGraph {
                 }
             }
         }
+
         if (m_solver.equals("z3")) {
             String questionFile = "newFormulaChrSmt.cnf";
             TseytinTransformation.writeSmtCNF(m_root, questionFile);
@@ -563,7 +429,7 @@ public class ReductionGraph {
                     String a = v.split("_")[0];
 //                    System.out.println(a);
                     if (nodes.containsKey(a)) {
-                        System.out.println(v + " " + nodes.get(a).getName());
+                        System.out.println(v + " " + nodes.get(a).getGMLLabel());
                     }
                 }
                 ++i;

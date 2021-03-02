@@ -1,19 +1,19 @@
 package com.toposat;
 
 public class NVertex {
-    private final String label; // label - String id
+    private final String m_GML_Id; // label - String id
     private final int id;
     private final String name; // another label
 
-    public NVertex(String label, int id, String name) {
-        this.label = label;
+    public NVertex(String m_GML_Id, int id, String name) {
+        this.m_GML_Id = m_GML_Id;
         this.id = id;
         this.name = name;
     }
-    public String getLabel(){ return label; }
+    public String getGMLId(){ return m_GML_Id; }
     public int getId(){ return id; }
-    public String getName(){ return name; }
-    public String toString(){ return "NVertex" + id + label; }
+    public String getGMLLabel(){ return name; }
+    public String toString(){ return "NVertex" + id + m_GML_Id; }
     @Override
     public int hashCode() {
         return this.toString().hashCode();
