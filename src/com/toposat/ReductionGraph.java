@@ -62,6 +62,16 @@ public class ReductionGraph {
 
         m_nodeFormulaRoot = new NodeFormula();
         m_nodeFormulaRoot.operation = TypeOperation.conjunction;
+
+        if (m_solverName.equals("z3"))
+        {
+            m_solver = new SolverZ3(m_solverPath);
+        } else {
+            m_solver = new SolverPainless(m_solverPath);
+        }
+
+
+
     }
     // End of: Initialize
     // ====================================================================
