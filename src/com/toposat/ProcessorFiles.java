@@ -9,10 +9,7 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.Vector;
@@ -119,11 +116,9 @@ public class ProcessorFiles {
         numberVariables nv = new numberVariables();
         nv.declareVariablesCNF(root);
         try {
-            File formulaFile = new File(filename);
-            formulaFile.createNewFile();
             FileWriter Writer = new FileWriter(filename);
             Writer.write("p cnf " + nv.getVarcnt() + " " + nv.getClcnt() + "\n");
-            ReductionGraph.treeWalkCNFdimacs(root, Writer);
+            treeWalkCNFdimacs(root, Writer);
             Writer.close();
         } catch (IOException e) {
             System.out.println("An error occured.");
@@ -170,4 +165,54 @@ public class ProcessorFiles {
         }
         return false_var;
     }
+
+    // ====================================================================
+    // Prepare file before introducing new variables
+    static void cutFileTail(String filepathSMTLIB) {
+        cutFileTail(filepathSMTLIB,24);
+    }
+
+    private static void cutFileTail(String filepathSMTLIB, int sizeTail) {
+        try {
+            RandomAccessFile file = new RandomAccessFile(filepathSMTLIB, "rw");
+            long length = file.length();
+            // ending is 24 symbols:
+            // (check-sat)
+            // (get-model)
+            file.setLength(length - sizeTail);
+            file.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+    // ====================================================================
+
+    // ====================================================================
+    // CNF serializer
+    // recursive writer of formula from a tree(for CNF) in dimacs
+    public static int treeWalkCNFdimacs(NodeFormula root, FileWriter Writer) throws IOException {
+        int was_zero = 0;
+        if (root == null) {
+            return 1;
+        }
+        if (root.operation == TypeOperation.variable) {
+            Writer.write(root.var + " ");
+        }
+        int last = treeWalkCNFdimacs(root.left, Writer);
+        if ((root.operation == TypeOperation.conjunction) && (last == 0)) {
+            Writer.write("0\n");
+            was_zero = 1;
+        }
+        last = treeWalkCNFdimacs(root.right, Writer);
+        if ((root.operation == TypeOperation.conjunction) && (last == 0)) {
+            Writer.write("0\n");
+            was_zero = 1;
+        }
+        if (root.operation == TypeOperation.conjunction) {
+            was_zero = 1;
+        }
+        return was_zero;
+    }
+    // ====================================================================
+
 }
