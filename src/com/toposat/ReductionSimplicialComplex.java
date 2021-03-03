@@ -28,10 +28,8 @@ public class ReductionSimplicialComplex {
 
     // ====================================================================
     // Static members
-    static private NodeFormula m_nodeFormulaRoot;
+    static private NodeFormula m_nodeFormulaRoot = new NodeFormula();
     static private final ComplexSimplicialAbstract m_complexAS = new ComplexSimplicialAbstract();
-
-    static private final LinkedHashMap<String, NVertex> m_nodesGraph = new LinkedHashMap<>();
 
     static private Visitor m_visitorCurrent;
     private static Solver m_solver;
@@ -60,9 +58,8 @@ public class ReductionSimplicialComplex {
     // Initialize
     private static void initialize() throws ParserConfigurationException, IOException, SAXException {
         Element docElement = ProcessorFiles.readXMLFile(m_filepathGraphInput);
-        ProcessorFiles.extractGraph(docElement, m_nodesGraph, m_complexAS.m_graph);
+        ProcessorFiles.extractGraph(docElement, m_complexAS);
 
-        m_nodeFormulaRoot = new NodeFormula();
         m_nodeFormulaRoot.operation = TypeOperation.conjunction;
 
         if (m_solverName.equals("z3"))
@@ -73,8 +70,6 @@ public class ReductionSimplicialComplex {
             m_solver = new SolverPainless(m_solverPath);
         }
 
-
-
     }
     // End of: Initialize
     // ====================================================================
@@ -82,30 +77,32 @@ public class ReductionSimplicialComplex {
 
     // ====================================================================
     // Main entry point
+    public static void out(String str) {
+        System.out.println(str);
+    }
+
     public static void main(String[] args) throws IOException, SAXException, ParserConfigurationException, InterruptedException {
 
         parseArguments(args);
 
         //TODO:remove
-        m_filepathGraphInput = "4-8-tetrahedron.graphml";
+        //m_filepathGraphInput = "Graphs/4-8-tetrahedron.graphml";
+        m_filepathGraphInput = "Graphs/Full8.graphml";
 
+        // Initialization
         initialize();
 
-        /*
         if (true) {
-            VisitorNCycle myVisitor = new VisitorNCycle();
+            //VisitorNCycle myVisitor = new VisitorNCycle();
+            VisitorMaxCliqueSearchZ3 viz = new VisitorMaxCliqueSearchZ3(m_solver);
+            viz.visitGraph(m_nodeFormulaRoot, m_complexAS);
 
-            m_complexAS.traverseGraphNodes(myVisitor, m_nodeFormulaRoot);
+            out("Good");
             return;
         }
-        */
 
         VisitorCliqueSearch myVisitor = new VisitorCliqueSearch();
-        myVisitor.cliqueSize = 4;
-
-        myVisistor.visitGarph();
-        myVis.gestSols();
-        output...
+        myVisitor.cliqueSize = 3;
 
         m_complexAS.traverseGraphNodes(myVisitor, m_nodeFormulaRoot);
         m_complexAS.traverseGraphEdges(myVisitor, m_nodeFormulaRoot);
@@ -134,8 +131,8 @@ public class ReductionSimplicialComplex {
                 for (String v : trueVar) {
                     String a = v.split("_")[0];
 //                    System.out.println(a);
-                    if (m_nodesGraph.containsKey(a)) {
-                        System.out.println(v + " " + m_nodesGraph.get(a).getGMLLabel());
+                    if (m_complexAS.m_verticesGraph.containsKey(a)) {
+                        System.out.println(v + " " + m_complexAS.m_verticesGraph.get(a).getGMLLabel());
                     }
                 }
                 ++i;
@@ -278,8 +275,8 @@ public class ReductionSimplicialComplex {
     public static Vector<Vector<String>> solveALLSATZ3() throws IOException, InterruptedException {
 
         m_solver.Solve(m_nodeFormulaRoot);
-        Vector<String> trueVar = m_solver.getStringVectorTrueVariables();
-        Vector<String> falseVar = m_solver.getStringVectorFalseVariables();
+        Vector<String> trueVar = m_solver.getNamesTrueVariables();
+        Vector<String> falseVar = m_solver.getNamesFalseVariables();
 
         Vector<Vector<String>> solutions = new Vector<>();
 
@@ -309,8 +306,8 @@ public class ReductionSimplicialComplex {
             bw.close();
 
             m_solver.SolveContinue();
-            trueVar = m_solver.getStringVectorTrueVariables();
-            falseVar = m_solver.getStringVectorFalseVariables();
+            trueVar = m_solver.getNamesTrueVariables();
+            falseVar = m_solver.getNamesFalseVariables();
 
         }
         return solutions;
@@ -322,7 +319,7 @@ public class ReductionSimplicialComplex {
 
         m_solver.Solve(m_nodeFormulaRoot);
 
-        Vector<String> trueVar = m_solver.getStringVectorTrueVariables();
+        Vector<String> trueVar = m_solver.getNamesTrueVariables();
         Vector<Vector<String>> solutionsAll = new Vector<>();
 
         while (!trueVar.isEmpty()) {
@@ -354,7 +351,7 @@ public class ReductionSimplicialComplex {
 
             m_solver.SolveContinue();
 
-            trueVar = m_solver.getResultsStringVector();
+            trueVar = m_solver.getNamesTrueVariables();
         }
         return solutionsAll;
     }

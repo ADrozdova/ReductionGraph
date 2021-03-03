@@ -53,21 +53,23 @@ public class SolverPainless implements Solver {
 
     @Override
     public Vector<Integer> getResultsIntegerVector() {
+        return m_trueVar;
+    }
+
+    @Override
+    public Vector<String> getNamesFalseVariables() {
+
         return null;
     }
 
     @Override
-    public Vector<String> getResultsStringVector() {
+    public Vector<String> getNamesTrueVariables() {
+
         return null;
     }
 
     @Override
-    public Vector<String> getStringVectorFalseVariables() {
-        return null;
-    }
-
-    @Override
-    public Vector<String> getStringVectorTrueVariables() {
+    public SolverResult getResult() {
         return null;
     }
 }

@@ -6,10 +6,12 @@ import java.util.Vector;
 
 public class SolverZ3 implements Solver {
 
-    private String m_solverPath = "";
-    private Vector<Integer> m_vecInt_TrueVariables;
-    private Vector<String> m_vecStr_TrueVariables;
-    private Vector<String> m_vecStr_FalseVariables;
+    private String m_solverPath;
+
+    private SolverResult m_Result = new SolverResult();
+
+    //private Vector<String> m_vecStr_TrueVariables;
+    //private Vector<String> m_vecStr_FalseVariables;
 
     private String m_inputFilepath;
     private String m_resultFilepath;
@@ -82,28 +84,26 @@ public class SolverZ3 implements Solver {
         b.redirectOutput(fileResult);
         Process p = b.start();
         p.waitFor();
-        m_vecStr_TrueVariables = ProcessorFiles.readResultFileSMTLIB(m_resultFilepath);
-        m_vecStr_FalseVariables = ProcessorFiles.extractFalseVarsFromFileSMT(m_resultFilepath);
-
+        ProcessorFiles.readResultFileSMTLIB(m_resultFilepath, m_Result);
     }
 
     @Override
     public Vector<Integer> getResultsIntegerVector() {
-        return m_vecInt_TrueVariables;
+        return null;
     }
 
     @Override
-    public Vector<String> getResultsStringVector() {
-        return m_vecStr_TrueVariables;
+    public Vector<String> getNamesFalseVariables() {
+        return m_Result.m_vecStr_FalseVariables;
     }
 
     @Override
-    public Vector<String> getStringVectorFalseVariables() {
-        return m_vecStr_FalseVariables;
+    public Vector<String> getNamesTrueVariables() {
+        return m_Result.m_vecStr_TrueVariables;
     }
 
     @Override
-    public Vector<String> getStringVectorTrueVariables() {
-        return m_vecStr_TrueVariables;
+    public SolverResult getResult() {
+        return m_Result;
     }
 }

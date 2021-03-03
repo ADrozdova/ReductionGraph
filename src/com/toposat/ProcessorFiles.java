@@ -1,6 +1,5 @@
 package com.toposat;
 
-import org.jgrapht.Graph;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -10,13 +9,12 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.*;
-import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.Vector;
 
 public class ProcessorFiles {
     // parsing from .graphml to Graph
-    public static void extractGraph(Element root, LinkedHashMap<String, NVertex> nodes, Graph<NVertex, NEdge> graph) {
+    public static void extractGraph(Element root, ComplexSimplicialAbstract complex) {
         NodeList cList = root.getChildNodes();
         int cnt = 1;
         int id = 1;
@@ -32,16 +30,18 @@ public class ProcessorFiles {
                     } else {
                         v = new NVertex(label, id, eElement.getElementsByTagName("y:NodeLabel").item(0).getTextContent());
                     }
-                    graph.addVertex(v);
-                    nodes.put(label, v);
+                    complex.m_graph.addVertex(v);
+                    complex.m_verticesGraph.put(label, v);
                     ++id;
                 }
                 if (node.getNodeName().equals("edge")) {
                     NEdge e = new NEdge(eElement.getAttribute("id"), cnt, cnt + 1);
-                    graph.addEdge(nodes.get(eElement.getAttribute("source")), nodes.get(eElement.getAttribute("target")), e);
+                    complex.m_graph.addEdge(
+                            complex.m_verticesGraph.get(eElement.getAttribute("source")),
+                            complex.m_verticesGraph.get(eElement.getAttribute("target")), e);
                     cnt += 2;
                 }
-                extractGraph(eElement, nodes, graph);
+                extractGraph(eElement, complex);
             }
         }
     }
@@ -78,19 +78,25 @@ public class ProcessorFiles {
     }
 
     // parse result file smt - getting true variables
-    public static Vector<String> readResultFileSMTLIB(String filename) {
-        Vector<String> true_var = new Vector<>();
+    public static void readResultFileSMTLIB(String filename, SolverResult m_Result) {
+        m_Result.m_vecStr_TrueVariables = new Vector<>();
+        m_Result.m_vecStr_FalseVariables = new Vector<>();
+
         try {
             File res = new File(filename);
             Scanner Reader = new Scanner(res);
             String line = Reader.nextLine();
-            if (line.equals("unsat")) {
+            if (line.equals("sat")) {
 //                System.out.println("Unsatisfiable formula");
-                return true_var;
-            }
-            if (!line.equals("sat")) {
+                m_Result.m_SAT = true;
+                m_Result.m_UNSAT = false;
+            } else if (line.equals("unsat")) {
+                m_Result.m_UNSAT = true;
+                m_Result.m_SAT = false;
+                return;
+            } else {
                 System.out.println("Bad format");
-                return true_var;
+                return;
             }
             while (Reader.hasNextLine()) {
                 line = Reader.nextLine();
@@ -99,7 +105,10 @@ public class ProcessorFiles {
                     variable = variable.replace(" () Bool", "");
                     line = Reader.nextLine();
                     if (line.contains("true")) {
-                        true_var.addElement(variable);
+                        m_Result.m_vecStr_TrueVariables.addElement(variable);
+                    }
+                    if (line.contains("false")) {
+                        m_Result.m_vecStr_FalseVariables.addElement(variable);
                     }
 
                 }
@@ -108,7 +117,6 @@ public class ProcessorFiles {
             System.out.println("An error occurred.");
             e.printStackTrace();
         }
-        return true_var;
     }
 
     // writing .cnf file in dimacs
@@ -134,37 +142,6 @@ public class ProcessorFiles {
     }
 
     // Read SMTLIB file and extract false variables
-    public static Vector<String> extractFalseVarsFromFileSMT(String filename) {
-        Vector<String> false_var = new Vector<>();
-        try {
-            File res = new File(filename);
-            Scanner Reader = new Scanner(res);
-            String line = Reader.nextLine();
-            if (line.equals("unsat")) {
-//                System.out.println("Unsatisfiable formula");
-                return false_var;
-            }
-            if (!line.equals("sat")) {
-                System.out.println("Bad format");
-                return false_var;
-            }
-            while (Reader.hasNextLine()) {
-                line = Reader.nextLine();
-                if (line.contains("define-fun")) {
-                    String variable = line.replace("  (define-fun ", "");
-                    variable = variable.replace(" () Bool", "");
-                    line = Reader.nextLine();
-                    if (line.contains("false")) {
-                        false_var.addElement(variable);
-                    }
-                }
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println("An error occurred.");
-            e.printStackTrace();
-        }
-        return false_var;
-    }
 
     // ====================================================================
     // Prepare file before introducing new variables

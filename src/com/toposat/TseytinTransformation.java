@@ -200,31 +200,6 @@ public class TseytinTransformation {
         makeTree(str, 0, str.length, newRoot);
     }
 
-    // gets a place for a new node in formula tree
-    static com.toposat.NodeFormula findPlace(com.toposat.NodeFormula root) {
-        if(root == null){
-            root = new com.toposat.NodeFormula();
-            root.operation = TypeOperation.conjunction;
-            return root;
-        }
-        if(root.left == null){
-            root.left = new com.toposat.NodeFormula();
-            root.left.operation = TypeOperation.conjunction;
-            return root.left;
-        } else if(root.right == null){
-            root.right = new com.toposat.NodeFormula();
-            root.right.operation = TypeOperation.conjunction;
-            return root.right;
-        } else {
-            com.toposat.NodeFormula curr = root.left;
-            root.left = new com.toposat.NodeFormula();
-            root.left.left = curr;
-            root.left.operation = TypeOperation.conjunction;
-            root.left.right = new com.toposat.NodeFormula();
-            root.left.right.operation = TypeOperation.conjunction;
-            return root.left.right;
-        }
-    }
 
     // calls transforming functions for all operation nodes according to type
     private static void transformToCNF(com.toposat.NodeFormula root, com.toposat.NodeFormula newRoot){
@@ -238,7 +213,15 @@ public class TseytinTransformation {
             System.out.println("here");
             return;
         }
-        com.toposat.NodeFormula place = findPlace(newRoot);
+        NodeFormula place = null;
+        if (newRoot == null)
+        {
+            place = NodeFormula.createNodeFormulaConjunction();
+        } else
+        {
+            place = newRoot.findPlace();
+        }
+
         String C = root.addVar;
         String A , B ="";
         TypeOperation t = root.operation;

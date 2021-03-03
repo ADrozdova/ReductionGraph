@@ -14,21 +14,21 @@ public class VisitorMaxCliqueSearchZ3 implements VisitorGraphToFormula {
         m_solverZ3 = solverZ3;
     }
 
-    private void processPos(NodeFormula curr, ComplexSimplicialAbstract complex, int pos){
+    private void processPos(NodeFormula nodeFormula, ComplexSimplicialAbstract complex, int pos){
         Set<NVertex> vertices = complex.m_graph.vertexSet();
         int n = vertices.size();
         int i = 0;
         for(NVertex vertex : vertices) {
             if(i < n - 1){
-                curr.operation = TypeOperation.disjunction;
-                curr.right = new NodeFormula();
-                curr.right.operation = TypeOperation.variable;
-                curr.right.varName = vertex.getGMLId() + "_" + pos;
-                curr.left = new NodeFormula();
-                curr = curr.left;
+                nodeFormula.operation = TypeOperation.disjunction;
+                nodeFormula.right = NodeFormula.createNodeFormulaVariable(
+                        vertex.getGMLId() + "_" + pos);
+
+                nodeFormula.left = new NodeFormula();
+                nodeFormula = nodeFormula.left;
             } else {
-                curr.operation = TypeOperation.variable;
-                curr.varName = vertex.getGMLId() + "_" + pos;
+                nodeFormula.operation = TypeOperation.variable;
+                nodeFormula.varName = vertex.getGMLId() + "_" + pos;
             }
             ++i;
         }
@@ -36,42 +36,54 @@ public class VisitorMaxCliqueSearchZ3 implements VisitorGraphToFormula {
 
     public void visitGraph (NodeFormula nodeFormula, ComplexSimplicialAbstract complex) throws IOException, InterruptedException {
 
-        NodeFormula nodeFormulaRoot = nodeFormula;
+        int size = complex.m_verticesGraph.size();
         m_cliqueSize = 2;
 
-        complex.traverseGraphNodes(this, nodeFormula);
-        complex.traverseGraphEdges(this, nodeFormula);
-        complex.traverseGraphNonEdges(this, nodeFormula);
+        while (m_cliqueSize <= size)
+        {
+            NodeFormula nodeFormulaRoot = NodeFormula.createNodeFormulaConjunction();
 
-        //complex.traverseGraph(this, nodeFormula);
-        nodeFormula = TseytinTransformation.findPlace(nodeFormula);
+            nodeFormula = nodeFormulaRoot;
 
-        m_solverZ3.Solve(nodeFormula);
+            complex.traverseGraphNodes(this, nodeFormula);
+            complex.traverseGraphEdges(this, nodeFormula);
+            complex.traverseGraphNonEdges(this, nodeFormula);
 
-        Vector<Vector<String>> results = solveALLSATZ3();
-        System.out.println(results.size());
-        int i = 0;
-        for (Vector<String> trueVar : results) {
-            System.out.println("Solution " + i);
-            for (String v : trueVar) {
-                String a = v.split("_")[0];
-//                 System.out.println(a);
-                if (m_nodesGraph.containsKey(a)) {
-                    System.out.println(v + " " + m_nodesGraph.get(a).getGMLLabel());
-                }
+            nodeFormula = nodeFormula.findPlace();
+
+            //=====================================================================
+            // Enforce a node-variable in each of k parts of k-clique
+            for(int i = 1; i < m_cliqueSize; ++i){
+                nodeFormula.operation = TypeOperation.conjunction;
+                nodeFormula.right = new NodeFormula();
+                processPos(nodeFormula.right, complex, i);
+                nodeFormula.left = new NodeFormula();
+                nodeFormula = nodeFormula.left;
             }
-            ++i;
-        }
+            processPos(nodeFormula, complex, m_cliqueSize);
+            // End: Enforce a node-variable in each of k parts of k-clique
+            //=====================================================================
 
-        //old
-        for(int i = 1; i < m_cliqueSize; ++i){
-            nodeFormula.operation = TypeOperation.conjunction;
-            nodeFormula.right = new NodeFormula();
-            processPos(nodeFormula.right, graph, i);
-            nodeFormula.left = new NodeFormula();
-            nodeFormula = nodeFormula.left;
+            m_solverZ3.Solve(nodeFormulaRoot);
+            if (m_solverZ3.getResult().m_UNSAT) {
+                m_cliqueSize--;
+                break;
+            }
+            if (m_solverZ3.getResult().m_SAT) {
+                Vector<String> trueVar = m_solverZ3.getNamesTrueVariables();
+                System.out.println("Solution Clique:" + m_cliqueSize);
+                for (String v : trueVar) {
+                    String a = v.split("_")[0];
+                    if (complex.m_verticesGraph.containsKey(a)) {
+                        System.out.println(v + " " + complex.m_verticesGraph.get(a).getGMLLabel());
+                    }
+                }
+
+                m_cliqueSize++;
+            } else {
+                throw new RuntimeException("Unknown behaviour: VisitorMaxCliqueSearchZ3");
+            }
         }
-        processPos(nodeFormula, graph, m_cliqueSize);
     }
 
     public void visitNonEdge(NodeFormula nodeFormula, NVertex first, NVertex second, ComplexSimplicialAbstract complex){
@@ -96,20 +108,17 @@ public class VisitorMaxCliqueSearchZ3 implements VisitorGraphToFormula {
     private void processPair(NodeFormula nodeFormula, NVertex first, NVertex second, int i, int j){
         nodeFormula.operation = TypeOperation.disjunction;
 
-        nodeFormula.right = new NodeFormula();
-        nodeFormula.right.operation = TypeOperation.not;
-        nodeFormula.right.left = new NodeFormula();
-        nodeFormula.right.left.operation = TypeOperation.variable;
-        nodeFormula.right.left.varName = first.getGMLId() + "_" + j;
+        nodeFormula.right = NodeFormula.createNodeFormulaNot();
+        nodeFormula.right.left = NodeFormula.createNodeFormulaVariable(
+                first.getGMLId() + "_" + j);
 
-        nodeFormula.left = new NodeFormula();
-        nodeFormula.left.operation = TypeOperation.not;
-        nodeFormula.left.left = new NodeFormula();
-        nodeFormula.left.left.operation = TypeOperation.variable;
-        nodeFormula.left.left.varName = second.getGMLId() + "_" + i;
+        nodeFormula.left = NodeFormula.createNodeFormulaNot();
+        nodeFormula.left.left = NodeFormula.createNodeFormulaVariable(
+                second.getGMLId() + "_" + i);
     }
 
     public void visitNode(NodeFormula nodeFormula, NVertex vertex, ComplexSimplicialAbstract complex){
+        //Prohibits a variable in two parts simultaneously
         int count = 1;
         int last = m_cliqueSize * (m_cliqueSize - 1) / 2;
         for(int i = 1; i <= m_cliqueSize; ++i){

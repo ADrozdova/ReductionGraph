@@ -9,8 +9,8 @@ public class VisitorCliqueSearch implements VisitorGraphToFormula {
 
     int cliqueSize = 3;
 
-    private void processPos(com.toposat.NodeFormula curr, Graph<NVertex, NEdge> graph, int pos){
-        Set<NVertex> vertices = graph.vertexSet();
+    private void processPos(com.toposat.NodeFormula curr, ComplexSimplicialAbstract complex, int pos){
+        Set<NVertex> vertices = complex.m_graph.vertexSet();
         int n = vertices.size();
         int i = 0;
         for(NVertex vertex : vertices) {
@@ -29,18 +29,18 @@ public class VisitorCliqueSearch implements VisitorGraphToFormula {
         }
     }
 
-    public void visitGraph (com.toposat.NodeFormula curr, Graph<NVertex, NEdge> graph){
+    public void visitGraph (com.toposat.NodeFormula curr, ComplexSimplicialAbstract complex){
         for(int i = 1; i < cliqueSize; ++i){
             curr.operation = com.toposat.TypeOperation.conjunction;
             curr.right = new com.toposat.NodeFormula();
-            processPos(curr.right, graph, i);
+            processPos(curr.right, complex, i);
             curr.left = new com.toposat.NodeFormula();
             curr = curr.left;
         }
-        processPos(curr, graph, cliqueSize);
+        processPos(curr, complex, cliqueSize);
     }
 
-    public void visitNonEdge(com.toposat.NodeFormula curr, NVertex first, NVertex second, Graph<NVertex, NEdge> graph){
+    public void visitNonEdge(com.toposat.NodeFormula curr, NVertex first, NVertex second, ComplexSimplicialAbstract complex){
         int count = 1;
         int last = cliqueSize * cliqueSize;
         for(int i = 1; i <= cliqueSize; ++i){
@@ -75,7 +75,7 @@ public class VisitorCliqueSearch implements VisitorGraphToFormula {
         curr.left.left.varName = second.getGMLId() + "_" + i;
     }
 
-    public void visitNode(com.toposat.NodeFormula curr, NVertex vertex, Graph<NVertex, NEdge> graph){
+    public void visitNode(com.toposat.NodeFormula curr, NVertex vertex, ComplexSimplicialAbstract complex){
         int count = 1;
         int last = cliqueSize * (cliqueSize - 1) / 2;
         for(int i = 1; i <= cliqueSize; ++i){
@@ -96,7 +96,7 @@ public class VisitorCliqueSearch implements VisitorGraphToFormula {
         }
     }
 
-    public void visitEdge(NodeFormula curr, NEdge edge, Graph<NVertex, NEdge> graph) {
+    public void visitEdge(NodeFormula curr, NEdge edge, ComplexSimplicialAbstract complex) {
 //        System.out.println("visit edge");
         NVertex first = edge.getFirst();
         NVertex second = edge.getSecond();

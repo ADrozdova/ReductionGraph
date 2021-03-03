@@ -16,9 +16,8 @@ public interface Solver {
 
     Vector<Integer> getResultsIntegerVector();
 
-    Vector<String> getResultsStringVector();
+    Vector<String> getNamesFalseVariables();
+    Vector<String> getNamesTrueVariables();
 
-    Vector<String> getStringVectorFalseVariables();
-
-    Vector<String> getStringVectorTrueVariables();
+    SolverResult getResult();
 }
