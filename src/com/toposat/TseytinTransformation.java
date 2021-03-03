@@ -201,7 +201,7 @@ public class TseytinTransformation {
     }
 
     // gets a place for a new node in formula tree
-    static com.toposat.NodeFormula findPlace(com.toposat.NodeFormula root){
+    static com.toposat.NodeFormula findPlace(com.toposat.NodeFormula root) {
         if(root == null){
             root = new com.toposat.NodeFormula();
             root.operation = TypeOperation.conjunction;

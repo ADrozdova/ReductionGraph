@@ -69,6 +69,7 @@ public class ReductionSimplicialComplex {
         {
             m_solver = new SolverZ3(m_solverPath);
         } else {
+            // "default" "painless"
             m_solver = new SolverPainless(m_solverPath);
         }
 
@@ -86,7 +87,7 @@ public class ReductionSimplicialComplex {
         parseArguments(args);
 
         //TODO:remove
-        m_filepathGraphInput = "graph2.graphml";
+        m_filepathGraphInput = "4-8-tetrahedron.graphml";
 
         initialize();
 
@@ -100,7 +101,11 @@ public class ReductionSimplicialComplex {
         */
 
         VisitorCliqueSearch myVisitor = new VisitorCliqueSearch();
-        myVisitor.cliqueSize = 3;
+        myVisitor.cliqueSize = 4;
+
+        myVisistor.visitGarph();
+        myVis.gestSols();
+        output...
 
         m_complexAS.traverseGraphNodes(myVisitor, m_nodeFormulaRoot);
         m_complexAS.traverseGraphEdges(myVisitor, m_nodeFormulaRoot);
@@ -313,7 +318,8 @@ public class ReductionSimplicialComplex {
     // ====================================================================
 
     // ====================================================================
-    public static Vector<Vector<String>> AllCliqueZ3() throws IOException, InterruptedException {
+    public static Vector<Vector<String>> solveAllCliqueZ3() throws IOException, InterruptedException {
+
         m_solver.Solve(m_nodeFormulaRoot);
 
         Vector<String> trueVar = m_solver.getStringVectorTrueVariables();
